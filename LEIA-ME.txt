@@ -1,0 +1,261 @@
+================================================================================
+  MRClans — LEIA-ME
+  Manual de quem vai usar, configurar ou mexer no código
+================================================================================
+
+Eu sou o MRJGodzilla. Faço plugin, bot e server pra funcionar de verdade:
+entrega com manual, suporte, e o código fica com quem contratou.
+
+Este LEIA-ME é o mesmo espírito. Sem enrolação.
+
+
+--------------------------------------------------------------------------------
+1) O QUE É
+--------------------------------------------------------------------------------
+
+Sistema de clãs pro Paper 1.21.x.
+
+  - Jogador abre /clan e usa a GUI
+  - Quem prefere teclado tem atalho no chat
+  - Staff tem /clan admin
+  - Dados no próprio servidor (clans.json), sem depender de site meu
+
+Base clássica de clã (criar, convidar, home, chat, KDR), com o que server
+pede hoje: menu, convite clicável, spy, force join, desfazer com confirm.
+
+
+--------------------------------------------------------------------------------
+2) INSTALAR (sem programar)
+--------------------------------------------------------------------------------
+
+  1. Build gera: build/libs/MRClans-1.0.0.jar
+  2. Copia só esse jar pra plugins/
+  3. Não joga gradle-wrapper.jar nem pasta do projeto dentro de plugins
+  4. Restart no Paper/Purpur 1.21.x
+  5. Console deve mostrar o MRClans subindo
+
+PlaceholderAPI é opcional. Tem → placeholders ligam. Não tem → segue normal.
+
+
+--------------------------------------------------------------------------------
+3) CONFIG (plugins/MRClans/config.yml)
+--------------------------------------------------------------------------------
+
+Aparece no primeiro start.
+
+  cla.nome-min / nome-max     tamanho do nome na criação
+  cla.tag-min / tag-max       tamanho da tag (só letra e número)
+  cla.max-membros             limite de gente no clã
+  cla.convite-expira-segundos convite morre depois disso
+
+  chat.tag-colorida           tag no chat global
+  chat.formato                use {tag} {jogador} {mensagem}
+
+  home.delay-segundos         espera antes do TP
+  home.cooldown.*             cooldown por cargo
+
+  ranking.metrica             kills | kdr | membros
+  diario.max-eventos          quantas linhas de histórico
+  persistencia.auto-save-segundos
+                              0 = só no stop (ou /clan admin salvar)
+
+Staff: /clan admin reload  (relê o YAML sem derrubar o JSON dos clãs)
+
+
+--------------------------------------------------------------------------------
+4) JOGADOR
+--------------------------------------------------------------------------------
+
+  /clan
+      sem clã → criar / ranking / ajuda
+      com clã → menu do clã
+
+  /clan criar Dragons DRG
+      nome 3–16 (letra, número, _ -)
+      tag 2–5 (só A-Z 0-9)
+
+  /clan convidar Nick
+      chega com [ACEITAR] [RECUSAR]
+
+  /clan aceitar   /clan recusar   /clan entrar TAG
+
+  No clã: membros, cargos, diário, top, online, chat, pvp, home, sethome,
+  motto, aliar/rival, promover, rebaixar, sair, expulsar,
+  desfazer confirm (só líder).
+
+
+--------------------------------------------------------------------------------
+5) STAFF
+--------------------------------------------------------------------------------
+
+Permissão: mrclans.admin (default op)
+
+  /clan admin reload
+  /clan admin desfazer <tag>
+  /clan admin forcarentrar <player> <tag>
+  /clan admin spy
+  /clan admin salvar
+  /clan admin info
+
+Um detalhe de host: um plugin de /clan por server. Dois no mesmo comando
+é dor de cabeça garantida.
+
+
+--------------------------------------------------------------------------------
+6) COMO O CÓDIGO SE ORGANIZA
+--------------------------------------------------------------------------------
+
+Três pedaços:
+
+  core/
+      Decide a regra (pode criar? pode expulsar?).
+      Não importa org.bukkit. Se a lógica errou, o bug é aqui.
+
+  persistencia/
+      clans.json. schemaVersion existe pra não quebrar save antigo
+      quando o formato mudar no futuro.
+
+  adapters/
+      Paper: comando, GUI, listener, placeholder.
+      É a ponte. Fino de propósito.
+
+Por que assim?
+  Já quebrei plugin misturando Location do Bukkit no meio da regra e
+  Gson chorando no save. Home em mundo+coords e core limpo evita isso.
+  Cliente também consegue ler o código depois da entrega — isso faz parte
+  do serviço.
+
+
+--------------------------------------------------------------------------------
+7) PASTAS (mapa rápido)
+--------------------------------------------------------------------------------
+
+  MRClans.java              liga tudo no onEnable/onDisable
+  core/                     Clan, Membro, Cargo, GerenciadorClas, stats…
+  config/                   Config, Mensagens, Perms
+  persistencia/             JSON
+  adapters/comandos/        um arquivo por subcomando; ComandoClan só distribui
+  adapters/gui/             menus + clique
+  adapters/listeners/       chat, pvp, kill, join/quit
+  adapters/placeholders/    PAPI
+
+
+--------------------------------------------------------------------------------
+8) FLUXO DE UM COMANDO (expulsar)
+--------------------------------------------------------------------------------
+
+  1. /clan expulsar Pedro
+  2. ComandoClan manda pra ComandoClanExpulsar
+  3. Adapter checa se está em clã, acha o alvo
+  4. GerenciadorClas.expulsar aplica a regra de cargo
+  5. Se ok: tira do mapa, mensagem, diário
+
+Bug de mensagem → adapter.
+Bug de “deixou expulsar líder” → core.
+Bug de sumiu no restart → persistência.
+
+
+--------------------------------------------------------------------------------
+9) USAR O MRCLANS DE BASE
+--------------------------------------------------------------------------------
+
+Quer facção, party, guilda no mesmo estilo:
+
+  1. Copia o projeto / clona o repo
+  2. Troca o package
+  3. No core, Clan vira o que for (Faccao, Party…)
+  4. Ajusta regra no Gerenciador
+  5. Adapters: texto da GUI e nome dos comandos
+  6. plugin.yml: name, main, commands
+  7. Build e testa local
+
+O que já vem pronto pra reaproveitar:
+  roteador + tab-complete, JSON versionado, GUI + listener,
+  auto-save, soft depend do PAPI.
+
+Regra que eu não abro mão: core sem Paper.
+
+
+--------------------------------------------------------------------------------
+10) MONTAR ALGO PARECIDO DO ZERO
+--------------------------------------------------------------------------------
+
+Se você nunca fez plugin:
+
+  A. Uma frase: “grupo com tag, home e chat”
+  B. Classes puras (Grupo, Membro, Gerenciador) — sem Bukkit ainda
+  C. Save simples com versão
+  D. JavaPlugin: load, comando, eventos, save no disable
+  E. Um comando raiz que abre menu ou roteia subcomando
+  F. GUI se fizer sentido pro server
+  G. Config com default que não quebra se o dono errar o YAML
+  H. README curto + este tipo de LEIA-ME
+
+Ferramenta mínima: JDK 21, Paper API no Gradle, server local pra testar.
+Não precisa de banco remoto nem framework pra começar.
+
+
+--------------------------------------------------------------------------------
+11) DEU RUIM?
+--------------------------------------------------------------------------------
+
+  major version 70
+      Java 26 no PATH e Gradle velho. Este repo usa Gradle 9.4.
+      Ou usa JDK 21 no PATH.
+
+  gradlew.bat não reconhecido
+      Pasta errada, ou ZIP sem wrapper. Tem que ter gradlew.bat
+      e gradle/wrapper/gradle-wrapper.jar na raiz do projeto.
+
+  “subcomando não implementado”
+      Jar antigo em plugins/. Apaga todos MRClans*.jar e põe o build novo.
+
+  /clan faz outra coisa
+      Outro plugin de clã no server.
+
+  Tag recusada
+      2–5 chars, A-Z e 0-9 só.
+
+  Home não TP
+      Mundo da home precisa estar carregado.
+
+  Dados sumiram
+      Server morto na força no meio do save. Usa /stop, auto-save > 0,
+      ou /clan admin salvar.
+
+
+--------------------------------------------------------------------------------
+12) BUILD E GITHUB
+--------------------------------------------------------------------------------
+
+  gradlew.bat clean build
+  → build/libs/MRClans-1.0.0.jar
+
+Subir o repo (na pasta do projeto):
+
+  git init
+  git add .
+  git commit -m "MRClans 1.0.0"
+  git branch -M main
+  git remote add origin https://github.com/SEU_USER/MRClans.git
+  git push -u origin main
+
+build/ e .gradle/ já estão no .gitignore.
+
+Release no GitHub: tag v1.0.0 e anexa o jar. Quem não compila só baixa.
+
+
+--------------------------------------------------------------------------------
+FECHANDO
+--------------------------------------------------------------------------------
+
+Roda no server, cria um clã, abre o menu.
+Depois abre ComandoClanCriar e segue até o GerenciadorClas.
+É o caminho mais rápido pra entender de verdade.
+
+Se for usar em produção e precisar de ajuste sob demanda,
+me chama no Discord: @mrjgodzilla.dev
+Site: https://mrjgodzilla.squareweb.app/
+
+— MRJGodzilla
+================================================================================

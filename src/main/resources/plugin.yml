@@ -1,0 +1,33 @@
+name: MRClans
+version: '1.0.0'
+main: dev.mrjgodzilla.mrclans.MRClans
+api-version: '1.21'
+author: MRJGodzilla
+description: Clãs modernos — GUI, staff tools, leve e estável.
+softdepend: [PlaceholderAPI]
+
+commands:
+  clan:
+    description: GUI do clã e atalhos
+    usage: /clan
+    aliases: [c, cla]
+
+permissions:
+  mrclans.usar:
+    description: Usar /clan e GUI
+    default: true
+  mrclans.criar:
+    description: Criar clã
+    default: true
+  mrclans.admin:
+    description: Todas as ferramentas de staff
+    default: op
+  mrclans.admin.reload:
+    description: /clan admin reload
+    default: op
+  mrclans.admin.desfazer:
+    description: /clan admin desfazer <tag>
+    default: op
+  mrclans.admin.spy:
+    description: Espiar chat de clãs
+    default: op
